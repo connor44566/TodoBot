@@ -1,0 +1,36 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '1.2.3'
+    id 'application'
+    id 'java'
+}
+
+group 'com.github.minndevelopment'
+version '0.1a'
+
+//noinspection GroovyUnusedAssignment
+mainClassName = "com.github.minndevelopment.todobot.Launcher"
+compileJava.options.encoding = 'UTF-8'
+
+//java version
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile 'net.dv8tion:JDA:2.2.0_338'
+}
+
+//gradle wrapper
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.14.1'
+}
+
+//ignore symbol warnings
+compileJava {
+    options.compilerArgs << '-XDignore.symbol.file'
+    options.fork = true // may not needed on 1.8
+    options.forkOptions.executable = 'javac' // may not needed on 1.8
+}
