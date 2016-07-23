@@ -52,6 +52,30 @@ public class ListManager
 		return chunks;
 	}
 
+	public static List<String> getList(List<Message> history, TextChannel channel)
+	{
+		List<String> lines = new LinkedList<>();
+		if (history == null) return null;
+		List<String[]> chunks = getChunks(history, channel);
+		for (String[] chunk : chunks)
+			Collections.addAll(lines, chunk);
+		return lines;
+	}
+
+	public static List<ListTuple<MessageImpl, String[]>> getAssosiatedChunks(List<Message> history, TextChannel channel)
+	{
+		assert channel != null && ChannelManager.has(channel.getId()) : "No such channel.";
+		List<ListTuple<MessageImpl, String[]>> chunks = new LinkedList<>();
+		if (history == null) return null;
+		history = history.parallelStream()
+				.filter(m -> m.getAuthor() == channel.getJDA().getSelfInfo())
+				.sorted(COMPARATOR_MESSAGE).collect(Collectors.toList());
+		for (Message message : history)
+			chunks.add(new ListTuple<>((MessageImpl) message, message.getRawContent().split("\n")));
+		return chunks;
+	}
+
+
 	public static List<String[]> getChunks(List<Message> hist, TextChannel channel)
 	{
 		assert channel != null && ChannelManager.has(channel.getId()) : "No such channel.";
@@ -97,20 +121,26 @@ public class ListManager
 		{
 			return false;
 		}
-		// TODO: TEST
 	}
 
 	public static boolean add(String newLine, TextChannel channel)
 	{
 		assert channel != null && ChannelManager.has(channel.getId()) : "No such channel.";
 		newLine = newLine.replaceAll("(~~|\n)", "");
-		List<ListTuple<MessageImpl, String[]>> chunks = getAssosiatedChunks(channel);
+		List<Message> history = channel.getHistory().retrieve(10);
+		if (history == null)
+		{
+			channel.sendMessageAsync("1) " + newLine, null);
+			return true;
+		}
+		history = history.parallelStream().filter(m -> m.getAuthor() == channel.getJDA().getSelfInfo()).collect(Collectors.toList());
+		List<ListTuple<MessageImpl, String[]>> chunks = getAssosiatedChunks(history, channel);
 		if (chunks == null || chunks.isEmpty())
 		{
 			channel.sendMessageAsync("1) " + newLine, null);
 			return true;
 		}
-		List<String> lines = getList(channel);
+		List<String> lines = getList(history, channel);
 		int index = (lines == null ? 1 : lines.size() + 1);
 		Message m = chunks.get(chunks.size() - 1).message;
 		CharSequence[] chunk = chunks.get(chunks.size() - 1).chunk;
@@ -154,8 +184,12 @@ public class ListManager
 	public static boolean remove(TextChannel channel, int index)
 	{
 		assert channel != null && ChannelManager.has(channel.getId()) : "No such channel.";
-		List<ListTuple<MessageImpl, String[]>> chunks = getAssosiatedChunks(channel);
-		List<String> lines = getList(channel);
+		List<Message> history = channel.getHistory().retrieve(10);
+		if (history == null)
+			return false;
+		history = history.parallelStream().filter(m -> m.getAuthor() == channel.getJDA().getSelfInfo()).collect(Collectors.toList());
+		List<ListTuple<MessageImpl, String[]>> chunks = getAssosiatedChunks(history, channel);
+		List<String> lines = getList(history, channel);
 		if (chunks == null || lines == null) return false;
 		int chunkIndex = (index - 1) / 10;
 		if (chunkIndex >= chunks.size()) return false;

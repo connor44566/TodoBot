@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.github.minndevelopment'
-version '0.1a'
+version '1.2b'
 
 //noinspection GroovyUnusedAssignment
 mainClassName = "com.github.minndevelopment.todobot.Launcher"

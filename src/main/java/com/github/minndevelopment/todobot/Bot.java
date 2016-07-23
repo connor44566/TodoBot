@@ -2,6 +2,8 @@ package com.github.minndevelopment.todobot;
 
 import com.github.minndevelopment.todobot.command.*;
 import com.github.minndevelopment.todobot.util.Config;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import net.dv8tion.jda.JDA;
 import net.dv8tion.jda.JDABuilder;
 import net.dv8tion.jda.Permission;
@@ -11,6 +13,7 @@ import net.dv8tion.jda.events.ReadyEvent;
 import net.dv8tion.jda.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.hooks.EventListener;
 import net.dv8tion.jda.utils.SimpleLog;
+import org.json.JSONObject;
 
 import javax.security.auth.login.LoginException;
 import java.io.IOException;
@@ -54,6 +57,30 @@ public class Bot implements EventListener
 		commands.add(new ListCommand(cfg.prefix));
 		commands.add(new Alias(new ListCommand(cfg.prefix), "todo"));
 		commands.add(new ToggleListCommand());
+
+
+		if (cfg.get("google") == null) return;
+		try
+		{
+			JSONObject obj = Unirest.post("https://www.googleapis.com/urlshortener/v1/url?key=" + cfg.get("google"))
+					.header("Content-Type", "application/json")
+					.body(new JSONObject()
+							.put("longUrl", event.getJDA().getSelfInfo().getAuthUrl(Permission.MESSAGE_WRITE,
+									Permission.MESSAGE_READ,
+									Permission.MESSAGE_MANAGE,
+									Permission.MESSAGE_HISTORY))
+							.toString())
+					.asJson().getBody().getObject();
+			if (obj.has("id"))
+				event.getJDA().getAccountManager().setGame(obj.getString("id"));
+			else
+				LOG.fatal("Response: " + obj.toString());
+		} catch (UnirestException ignored)
+		{
+		} catch (Exception e)
+		{
+			LOG.fatal(e);
+		}
 	}
 
 	@Override
