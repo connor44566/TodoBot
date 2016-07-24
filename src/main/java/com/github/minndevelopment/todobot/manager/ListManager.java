@@ -209,7 +209,7 @@ public class ListManager
 				String[] arr = new String[sub.length];
 				for (int i = 0; i < sub.length; i++)
 				{
-					int lineIndex = Integer.parseInt(((String) sub[i]).replaceAll("^(?:~~)?(\\d+).+$", "$1"));
+					int lineIndex = Integer.parseInt(((String) sub[i]).replaceAll("^(?:~~)?(\\d+).+$", "$1")) - 1;
 					arr[i] = ((String) sub[i]).replaceAll("^(~~)?(\\d+)", (((String) sub[i]).startsWith("~~") ? "$1" : "") + lineIndex);
 				}
 				chunk.message.updateMessageAsync(String.join("\n", (CharSequence[]) arr), null);
@@ -217,7 +217,7 @@ public class ListManager
 			}
 		} catch (Exception e)
 		{
-			e.printStackTrace();
+			LOG.log(e);
 		}
 		return true; // TODO: TEST
 	}
@@ -254,6 +254,25 @@ public class ListManager
 		}
 	}
 
+	public static boolean fix(TextChannel channel)
+	{
+		List<ListTuple<MessageImpl, String[]>> chunks = getAssosiatedChunks(channel);
+		if (chunks == null || chunks.isEmpty()) return false;
+		int i = 1;
+
+		for (ListTuple<MessageImpl, String[]> chunk : chunks)
+		{
+			for (int j = 0; j < chunk.chunk.length; j++)
+			{
+				if (chunk.chunk[j].startsWith("~~"))
+					chunk.chunk[j] = chunk.chunk[j].replaceAll("^~~\\d+\\) (.*)", "~~" + i++ + ") $1");
+				else
+					chunk.chunk[j] = chunk.chunk[j].replaceAll("^\\d+\\) (.*)", i++ + ") $1");
+			}
+			chunk.message.updateMessageAsync(String.join("\n", (CharSequence[]) chunk.chunk), null);
+		}
+		return true;
+	}
 
 	// ENTRY
 

@@ -6,8 +6,9 @@ import net.dv8tion.jda.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.exceptions.PermissionException;
 
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
-public abstract class AbstractCommand
+public abstract class AbstractCommand implements CharSequence
 {
 
 	public abstract void invoke(GuildMessageReceivedEvent event, String allArgs, String[] args);
@@ -15,6 +16,11 @@ public abstract class AbstractCommand
 	public String getInfo()
 	{
 		return getAlias() + " " + getAttributes();
+	}
+
+	public String getNote()
+	{
+		return "";
 	}
 
 	public abstract String getAlias();
@@ -52,4 +58,41 @@ public abstract class AbstractCommand
 		}
 	}
 
+	// Don't ask why...
+
+	@Override
+	public String toString()
+	{
+		return getAlias() + " " + getAttributes();
+	}
+
+	@Override
+	public IntStream chars()
+	{
+		return toString().chars();
+	}
+
+	@Override
+	public IntStream codePoints()
+	{
+		return toString().codePoints();
+	}
+
+	@Override
+	public int length()
+	{
+		return toString().length();
+	}
+
+	@Override
+	public char charAt(int index)
+	{
+		return toString().charAt(index);
+	}
+
+	@Override
+	public CharSequence subSequence(int start, int end)
+	{
+		return toString().subSequence(start, end);
+	}
 }

@@ -53,10 +53,12 @@ public class Bot implements EventListener
 
 	private void init(ReadyEvent event)
 	{
-		commands.add(new HelpCommand(commands)); // Help Command!
-		commands.add(new ListCommand(cfg.prefix));
-		commands.add(new Alias(new ListCommand(cfg.prefix), "todo"));
-		commands.add(new ToggleListCommand());
+		commands.add(new HelpCommand(commands, cfg.owner)); // Help Command!
+
+		AbstractCommand c = new ListCommand(cfg.prefix, cfg.owner);
+		commands.add(c);
+		commands.add(new Alias(c, "todo"));
+		commands.add(new ToggleListCommand(cfg.owner));
 
 
 		if (cfg.get("google") == null) return;
@@ -97,11 +99,6 @@ public class Bot implements EventListener
 		Message message = event.getMessage();
 		if (!message.getRawContent().startsWith(cfg.prefix) || message.getRawContent().length() <= cfg.prefix.length())
 			return;
-		if (!event.getChannel().checkPermission(event.getAuthor(), Permission.MANAGE_SERVER) && !event.getAuthor().getId().equals(cfg.owner))
-		{
-			AbstractCommand.send(event, "You are unable to operate this bot.");
-			return;
-		}
 		String command = message.getRawContent().substring(cfg.prefix.length()).split("\\s+")[0].toLowerCase();
 		String allArgs = message.getRawContent().substring(message.getRawContent().indexOf(command) + command.length()).trim();
 		String[] args = allArgs.split("\\s+");

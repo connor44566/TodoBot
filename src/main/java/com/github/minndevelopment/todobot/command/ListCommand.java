@@ -2,6 +2,7 @@ package com.github.minndevelopment.todobot.command;
 
 import com.github.minndevelopment.todobot.manager.ChannelManager;
 import com.github.minndevelopment.todobot.manager.ListManager;
+import net.dv8tion.jda.Permission;
 import net.dv8tion.jda.entities.Message;
 import net.dv8tion.jda.entities.TextChannel;
 import net.dv8tion.jda.events.message.guild.GuildMessageReceivedEvent;
@@ -12,15 +13,22 @@ public class ListCommand extends AbstractCommand
 {
 
 	private String prefix;
+	private String owner;
 
-	public ListCommand(String fix)
+	public ListCommand(String fix, String owner)
 	{
 		prefix = fix;
+		this.owner = owner;
 	}
 
 	@Override
-	public void invoke(GuildMessageReceivedEvent event, String allArgs, String[] args)
+	public synchronized void invoke(GuildMessageReceivedEvent event, String allArgs, String[] args)
 	{
+		if (!event.getChannel().checkPermission(event.getAuthor(), Permission.MANAGE_SERVER) && !event.getAuthor().getId().equals(owner))
+		{
+			AbstractCommand.send(event, "You are unable to operate this bot.");
+			return;
+		}
 		if (allArgs.isEmpty())
 		{
 			send(event, getInfo());
@@ -110,6 +118,7 @@ public class ListCommand extends AbstractCommand
 				}
 				break;
 			}
+			case "delete":
 			case "remove":
 			{
 				if (args.length < (targeting ? 3 : 2))
@@ -128,6 +137,7 @@ public class ListCommand extends AbstractCommand
 				}
 				break;
 			}
+			case "clean":
 			case "clear":
 			{
 				target.getHistory().retrieve(10).parallelStream().filter(m -> m.getAuthor() == event.getJDA().getSelfInfo()).forEach(Message::deleteMessage);
@@ -146,13 +156,34 @@ public class ListCommand extends AbstractCommand
 				else send(event, "No such index. (" + index + ")");
 				break;
 			}
+			case "fix":
+			{
+				if (ListManager.fix(target)) delete(event.getMessage());
+				else send(event, "No list to fix.");
+			}
 		}
 	}
 
 	@Override
 	public String getInfo()
 	{
-		return "test"; // TODO
+		return "`list " + getAttributes() + "`\n" +
+				"Used to edit a todo list.\n" +
+				"__Methods:__\n" +
+				">Add/Insert <content> - Adds given *content* to the list\n" +
+				">Edit/Update/Alter <index> <content> - Updates the todo entry listed at given *index* with the provided *content*\n" +
+				">Remove/Delete <index> - Removes entry located at provided *index*\n" +
+				">Strike/Mark/Unmark <index> - Toggles the strike effect for the entry located at *index*\n" +
+				">Promote <index> - Switches entry for *index* with the first element in the list\n" +
+				">Clear/Clean - Clears the list\n" +
+				">Fix - Fixes the list's indices\n\n" +
+				"Hint: Make sure the bot's messages are all containing chunks of the todo list. **No extra messages!** Max: 100 entries (no line breaks)";
+	}
+
+	@Override
+	public String getNote()
+	{
+		return "Alias: `todo`";
 	}
 
 	@Override
@@ -164,7 +195,7 @@ public class ListCommand extends AbstractCommand
 	@Override
 	public String getAttributes()
 	{
-		return "<method> [input]";
+		return "[channel] <method> [input]";
 	}
 
 }
